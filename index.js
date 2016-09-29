@@ -215,7 +215,7 @@ Blockchain.prototype._putBlock = function (block, cb, _genesis) {
         value: block.serialize()
       })
 
-      if (td.cmp(self.meta.td) === 1 || block.isGenesis()) {
+      if (!self.validate || td.cmp(self.meta.td) === 1 || block.isGenesis()) {
         blockDetails.inChain = true
         self.meta.rawHead = blockHash
         self.meta.height = ethUtil.bufferToInt(block.header.number)
