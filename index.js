@@ -17,7 +17,7 @@ const rlp = ethUtil.rlp
 
 var Blockchain = module.exports = function (db, validate) {
   if (!db) {
-    db = levelup('', {
+    db = levelup('/'+Math.random().toString(), {
       db: memdown
     })
   }
@@ -169,7 +169,7 @@ Blockchain.prototype._putBlock = function (block, cb, _genesis) {
     // look up the parent meta info
     function parentInfo (cb2) {
       // if genesis block
-      if (block.isGenesis()) {
+      if (block.isGenesis() || self.forkMode) {
         return cb2()
       }
 
@@ -186,7 +186,7 @@ Blockchain.prototype._putBlock = function (block, cb, _genesis) {
       // calculate the total difficulty for this block
       var td = new BN(ethUtil.bufferToInt(block.header.difficulty))
       // add this block as a child to the parent's block details
-      if (!block.isGenesis()) {
+      if (!block.isGenesis() && !self.forkMode) {
         td.iadd(new BN(parentDetails.td))
         parentDetails.staleChildren.push(blockHash)
       }
@@ -215,7 +215,7 @@ Blockchain.prototype._putBlock = function (block, cb, _genesis) {
         value: block.serialize()
       })
 
-      if (!self.validate || td.cmp(self.meta.td) === 1 || block.isGenesis()) {
+      if (!self.validate || td.cmp(self.meta.td) === 1 || block.isGenesis() || self.forkMode) {
         blockDetails.inChain = true
         self.meta.rawHead = blockHash
         self.meta.height = ethUtil.bufferToInt(block.header.number)
@@ -239,7 +239,10 @@ Blockchain.prototype._putBlock = function (block, cb, _genesis) {
         })
 
         if (!block.isGenesis()) {
-          self._rebuildBlockchain(blockHash, block.header.parentHash, parentDetails, dbOps, cb2)
+          // don't rebuild forked chains - to much overhead
+          // maybe readd this later
+          // self._rebuildBlockchain(blockHash, block.header.parentHash, parentDetails, dbOps, cb2)
+          cb2()
         } else {
           self.meta.genesis = blockHash
           cb2()
