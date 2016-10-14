@@ -58,7 +58,7 @@ Blockchain.prototype._init = function () {
     })
   }
 
-  this.db.get('meta', {
+  this.db.get(new Buffer('meta'), {
     valueEncoding: 'json'
   }, onHeadFound)
 }
@@ -203,14 +203,14 @@ Blockchain.prototype._putBlock = function (block, cb, _genesis) {
 
       dbOps.push({
         type: 'put',
-        key: 'detail' + blockHash,
+        key: new Buffer('detail' + blockHash),
         valueEncoding: 'json',
         value: blockDetails
       })
       // store the block
       dbOps.push({
         type: 'put',
-        key: blockHash,
+        key: new Buffer(blockHash,"hex"),
         valueEncoding: 'binary',
         value: block.serialize()
       })
@@ -221,11 +221,10 @@ Blockchain.prototype._putBlock = function (block, cb, _genesis) {
         self.meta.height = ethUtil.bufferToInt(block.header.number)
         self.meta.td = td
 
-        const key = parseInt(block.header.number.toString('hex'), 16).toString()
         // index by number
         dbOps.push({
           type: 'put',
-          key: key,
+          key: block.header.number,
           valueEncoding: 'binary',
           value: new Buffer(blockHash, 'hex')
         })
@@ -233,7 +232,7 @@ Blockchain.prototype._putBlock = function (block, cb, _genesis) {
         // save meta
         dbOps.push({
           type: 'put',
-          key: 'meta',
+          key: new Buffer('meta'),
           valueEncoding: 'json',
           value: self.meta
         })
@@ -250,7 +249,7 @@ Blockchain.prototype._putBlock = function (block, cb, _genesis) {
       } else {
         dbOps.push({
           type: 'put',
-          key: 'detail' + block.header.parentHash.toString('hex'),
+          key: new Buffer('detail' + block.header.parentHash.toString('hex')),
           valueEncoding: 'json',
           value: parentDetails
         })
@@ -274,7 +273,7 @@ Blockchain.prototype.getBlock = function (hash, cb) {
   var block
 
   if (!Number.isInteger(hash)) {
-    hash = ethUtil.toBuffer(hash).toString('hex')
+    hash = ethUtil.toBuffer(hash)
   }
 
   this.db.get(hash, {
@@ -306,7 +305,7 @@ Blockchain.prototype.getBlock = function (hash, cb) {
  * @param {Function} cb - the callback function
  */
 Blockchain.prototype.getDetails = function (hash, cb) {
-  this.db.get('detail' + hash.toString('hex'), {
+  this.db.get(new Buffer('detail' + hash.toString('hex')), {
     valueEncoding: 'json'
   }, cb)
 }
@@ -318,7 +317,7 @@ Blockchain.prototype.getDetails = function (hash, cb) {
  * @param {Function} cb - the callback function
  */
 Blockchain.prototype.putDetails = function (hash, val, cb) {
-  this.db.put('detail' + hash.toString('hex'), val, {
+  this.db.put(new Buffer('detail' + hash.toString('hex')), val, {
     valueEncoding: 'json'
   }, cb)
 }
@@ -358,7 +357,7 @@ Blockchain.prototype.selectNeededHashes = function (hashes, cb) {
 }
 
 Blockchain.prototype._saveMeta = function (cb) {
-  this.db.put('meta', this.meta, {
+  this.db.put(new Buffer('meta'), this.meta, {
     keyEncoding: 'json'
   }, cb)
 }
